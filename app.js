@@ -87,9 +87,10 @@ const pages = {
                 <h3 class="result-title">1단계: 연구 주제 선정</h3>
                 <p class="result-meta">AI와 대화하며 연구 주제를 구체화합니다.</p>
                 <div class="search-box" style="margin-top: 1rem; margin-bottom: 0;">
-                    <input type="text" class="search-input" placeholder="어떤 분야의 논문을 작성하고 싶으신가요?">
-                    <button class="primary-btn">작성 시작</button>
+                    <input type="text" id="write-input" class="search-input" placeholder="어떤 분야의 논문을 작성하고 싶으신가요?">
+                    <button class="primary-btn" onclick="startAiWrite()">작성 시작</button>
                 </div>
+                <div id="write-results" style="margin-top: 1.5rem;"></div>
             </div>
         `
     },
@@ -287,3 +288,49 @@ function showMockData(type, resultsContainer) {
 
 // Start App
 init();
+
+// AI 논문 작성 1단계 데모 함수
+window.startAiWrite = function() {
+    const input = document.getElementById('write-input').value;
+    const resultsContainer = document.getElementById('write-results');
+    
+    if (!input.trim()) {
+        alert('작성하고 싶은 분야나 주제를 입력해주세요.');
+        return;
+    }
+
+    // Show Loading
+    resultsContainer.innerHTML = `
+        <div style="text-align: center; padding: 2rem;">
+            <i data-lucide="loader-2" class="lucide-spin" style="width: 2rem; height: 2rem; color: var(--primary); animation: spin 1s linear infinite;"></i>
+            <p style="margin-top: 1rem; color: var(--text-muted);">AI가 '${input}' 분야의 최신 연구 동향을 분석하여 주제를 구상 중입니다...</p>
+        </div>
+    `;
+    lucide.createIcons();
+    
+    // Add spin animation dynamically if not exists
+    if (!document.getElementById('spin-anim')) {
+        const style = document.createElement('style');
+        style.id = 'spin-anim';
+        style.innerHTML = '@keyframes spin { 100% { transform: rotate(360deg); } }';
+        document.head.appendChild(style);
+    }
+
+    setTimeout(() => {
+        resultsContainer.innerHTML = `
+            <div class="result-card" style="border-left: 4px solid var(--menu-purple-text); background: var(--menu-purple); animation: fadeIn 0.5s;">
+                <h4 style="color: var(--menu-purple-text); margin-bottom: 0.5rem; display:flex; align-items:center; gap:0.5rem;"><i data-lucide="sparkles"></i> AI 추천 연구 주제</h4>
+                <p style="font-size: 0.875rem; line-height: 1.6; margin-bottom: 1rem;">
+                    입력하신 <strong>"${input}"</strong> 분야는 최근 학계에서 활발한 연구가 진행되고 있습니다. 다음 3가지 세부 주제 중 하나를 선택하여 논문을 전개해보는 것을 추천합니다.
+                </p>
+                <ol style="margin-left: 1.5rem; font-size: 0.875rem; line-height: 1.8; margin-bottom: 1.5rem;">
+                    <li>${input} 시스템의 최적화 알고리즘 설계 및 성능 평가</li>
+                    <li>딥러닝 기법을 적용한 차세대 ${input} 소자 결함 탐지 방법론</li>
+                    <li>${input} 기술을 활용한 데이터 처리 지연시간 최소화 방안</li>
+                </ol>
+                <button class="primary-btn" style="background: var(--menu-purple-text); margin:0 auto;" onclick="alert('다음 단계로 진행합니다. (구현 예정)')">2단계: 목차 구성하기 <i data-lucide="arrow-right"></i></button>
+            </div>
+        `;
+        lucide.createIcons();
+    }, 2000);
+}
