@@ -288,6 +288,16 @@ function showMockData(type, resultsContainer) {
     }, 1500);
 }
 
+// Helper: HTML 특수문자 이스케이프
+function escapeHTML(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#039;');
+}
+
 // Start App
 init();
 
@@ -341,8 +351,8 @@ function renderWriteStep() {
         html = `
             <div class="result-card" style="border-left: 4px solid var(--menu-purple-text);">
                 <h3 class="result-title">2단계: 목차 구성하기</h3>
-                <p class="result-meta">선택하신 주제 <strong>"${state.write.selectedTitle}"</strong>에 대한 목차(Outline) 초안입니다. 내용을 자유롭게 수정하세요.</p>
-                <textarea id="outline-editor" style="width: 100%; height: 200px; margin-top: 1rem; padding: 1rem; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; font-family: inherit; line-height: 1.6;">${state.write.outline}</textarea>
+                <p class="result-meta">선택하신 주제 <strong>"${escapeHTML(state.write.selectedTitle)}"</strong>에 대한 목차(Outline) 초안입니다. 내용을 자유롭게 수정하세요.</p>
+                <textarea id="outline-editor" style="width: 100%; height: 200px; margin-top: 1rem; padding: 1rem; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; font-family: inherit; line-height: 1.6;">${escapeHTML(state.write.outline)}</textarea>
                 <div style="display: flex; gap: 1rem; margin-top: 1rem; justify-content: flex-end;">
                     <button class="icon-text-btn" onclick="state.write.step = 1; renderWriteStep();">이전 단계</button>
                     <button class="primary-btn" onclick="goToStep3()" id="step3-btn">3단계: 본론 작성하기 <i data-lucide="arrow-right"></i></button>
@@ -355,7 +365,7 @@ function renderWriteStep() {
             <div class="result-card" style="border-left: 4px solid var(--menu-emerald-text);">
                 <h3 class="result-title">3단계: 서론 및 본론 작성</h3>
                 <p class="result-meta">AI가 목차를 바탕으로 서론과 본론의 초안을 작성했습니다. 자유롭게 편집해 보세요.</p>
-                <textarea id="draft-editor" style="width: 100%; height: 350px; margin-top: 1rem; padding: 1rem; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; font-family: inherit; line-height: 1.6;">${state.write.draft}</textarea>
+                <textarea id="draft-editor" style="width: 100%; height: 350px; margin-top: 1rem; padding: 1rem; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; font-family: inherit; line-height: 1.6;">${escapeHTML(state.write.draft)}</textarea>
                 <div style="display: flex; gap: 1rem; margin-top: 1rem; justify-content: flex-end;">
                     <button class="icon-text-btn" onclick="state.write.step = 2; renderWriteStep();">이전 단계</button>
                     <button class="primary-btn" onclick="goToStep4()" id="step4-btn">4단계: 결론 도출하기 <i data-lucide="arrow-right"></i></button>
@@ -368,7 +378,7 @@ function renderWriteStep() {
             <div class="result-card" style="border-left: 4px solid var(--menu-amber-text);">
                 <h3 class="result-title">4단계: 결론 도출 및 검토</h3>
                 <p class="result-meta">본론을 바탕으로 도출된 결론입니다. 논문의 완성도를 높여보세요.</p>
-                <textarea id="conclusion-editor" style="width: 100%; height: 200px; margin-top: 1rem; padding: 1rem; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; font-family: inherit; line-height: 1.6;">${state.write.conclusion}</textarea>
+                <textarea id="conclusion-editor" style="width: 100%; height: 200px; margin-top: 1rem; padding: 1rem; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; font-family: inherit; line-height: 1.6;">${escapeHTML(state.write.conclusion)}</textarea>
                 <div style="display: flex; gap: 1rem; margin-top: 1rem; justify-content: flex-end;">
                     <button class="icon-text-btn" onclick="state.write.step = 3; renderWriteStep();">이전 단계</button>
                     <button class="primary-btn" onclick="goToStep5()">최종 논문 완성하기 <i data-lucide="check-circle"></i></button>
@@ -377,15 +387,16 @@ function renderWriteStep() {
         `;
     }
     else if (state.write.step === 5) {
-        const fullPaper = `# ${state.write.selectedTitle}\n\n## 서론 및 본론\n${state.write.draft}\n\n## 결론\n${state.write.conclusion}`;
+        // 원래 텍스트(마크다운 형태) 조합
+        const fullPaper = `# ${state.write.selectedTitle.replace(/&quot;/g, '"').replace(/&#039;/g, "'")}\n\n## 서론 및 본론\n${state.write.draft}\n\n## 결론\n${state.write.conclusion}`;
         html = `
             <div class="result-card" style="border-left: 4px solid var(--primary); background: var(--menu-blue);">
                 <h3 class="result-title"><i data-lucide="award"></i> 5단계: 최종 논문 완성</h3>
                 <p class="result-meta">축하합니다! AI와 함께 논문 초안 작성을 완료했습니다.</p>
-                <div style="background: var(--bg-main); padding: 1.5rem; margin-top: 1rem; border-radius: 8px; border: 1px solid var(--border-color); max-height: 400px; overflow-y: auto; white-space: pre-wrap; line-height: 1.6; font-size: 0.95rem;">${fullPaper}</div>
+                <div style="background: var(--bg-main); padding: 1.5rem; margin-top: 1rem; border-radius: 8px; border: 1px solid var(--border-color); max-height: 400px; overflow-y: auto; white-space: pre-wrap; line-height: 1.6; font-size: 0.95rem;">${escapeHTML(fullPaper)}</div>
                 <div style="display: flex; gap: 1rem; margin-top: 1.5rem; justify-content: center;">
                     <button class="icon-text-btn" onclick="state.write.step = 4; renderWriteStep();">수정하러 가기</button>
-                    <button class="primary-btn" onclick="alert('논문 파일 다운로드 기능은 추후 연동됩니다!')"><i data-lucide="download"></i> 텍스트(.txt)로 다운로드</button>
+                    <button class="primary-btn" onclick="downloadPaper()"><i data-lucide="download"></i> 텍스트(.md)로 다운로드</button>
                 </div>
             </div>
         `;
@@ -427,7 +438,8 @@ window.goToStep2 = async function() {
         `;
         
         topics.forEach((topic, i) => {
-            html += `<button class="icon-text-btn" style="text-align: left; background: var(--bg-main); border: 1px solid var(--border-color); padding: 1rem; width: 100%; white-space: normal;" onclick="selectTopic('${topic.replace(/'/g, "\\'")}', this)">${i+1}. ${topic}</button>`;
+            const escapedTopic = topic.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+            html += `<button class="icon-text-btn" style="text-align: left; background: var(--bg-main); border: 1px solid var(--border-color); padding: 1rem; width: 100%; white-space: normal;" onclick="selectTopic('${escapedTopic}', this)">${i+1}. ${topic.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</button>`;
         });
         
         html += `</div></div>`;
@@ -504,4 +516,18 @@ window.goToStep5 = function() {
     state.write.conclusion = document.getElementById('conclusion-editor').value;
     state.write.step = 5;
     renderWriteStep();
+}
+
+window.downloadPaper = function() {
+    const title = state.write.selectedTitle.replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+    const fullPaper = `# ${title}\n\n## 서론 및 본론\n${state.write.draft}\n\n## 결론\n${state.write.conclusion}`;
+    const blob = new Blob([fullPaper], { type: 'text/markdown;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = '논문초안_AI.md';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 }
