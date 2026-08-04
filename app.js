@@ -1,6 +1,14 @@
 // App State
 const state = {
-    theme: localStorage.getItem('theme') || 'light'
+    theme: localStorage.getItem('theme') || 'light',
+    write: {
+        step: 1,
+        topic: '',
+        selectedTitle: '',
+        outline: '',
+        draft: '',
+        conclusion: ''
+    }
 };
 
 // DOM Elements
@@ -82,17 +90,11 @@ const pages = {
     '/write': {
         title: '학술지 작성 (AI 단계별)',
         desc: 'AI와 함께 단계별로 논문 작성을 진행합니다.',
-        render: () => `
-            <div class="result-card">
-                <h3 class="result-title">1단계: 연구 주제 선정</h3>
-                <p class="result-meta">AI와 대화하며 연구 주제를 구체화합니다.</p>
-                <div class="search-box" style="margin-top: 1rem; margin-bottom: 0;">
-                    <input type="text" id="write-input" class="search-input" placeholder="어떤 분야의 논문을 작성하고 싶으신가요?">
-                    <button class="primary-btn" onclick="startAiWrite()">작성 시작</button>
-                </div>
-                <div id="write-results" style="margin-top: 1.5rem;"></div>
-            </div>
-        `
+        render: () => {
+            // 초기 렌더링 시 빈 컨테이너를 반환하고, setTimeout으로 즉시 상태에 맞는 화면을 그립니다.
+            setTimeout(() => renderWriteStep(), 0);
+            return `<div id="write-container"></div>`;
+        }
     },
     '/citation': {
         title: 'Citation Maker',
@@ -289,48 +291,218 @@ function showMockData(type, resultsContainer) {
 // Start App
 init();
 
-// AI 논문 작성 1단계 데모 함수
-window.startAiWrite = function() {
-    const input = document.getElementById('write-input').value;
-    const resultsContainer = document.getElementById('write-results');
+// AI 논문 작성 관련 함수들
+async function callAiApi(prompt) {
+    try {
+        const response = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt })
+        });
+        
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.error || 'API 요청 실패');
+        }
+        
+        const data = await response.json();
+        return data.text;
+    } catch (error) {
+        alert('AI 생성 중 오류가 발생했습니다: ' + error.message);
+        console.error(error);
+        return null;
+    }
+}
+
+function renderWriteStep() {
+    const container = document.getElementById('write-container');
+    if (!container) return;
     
-    if (!input.trim()) {
-        alert('작성하고 싶은 분야나 주제를 입력해주세요.');
-        return;
+    let html = '';
+    
+    if (state.write.step === 1) {
+        html = `
+            <div class="result-card">
+                <h3 class="result-title">1단계: 연구 주제 선정</h3>
+                <p class="result-meta">관심 있는 연구 분야를 입력하면 AI가 적절한 논문 주제를 3가지 추천해 줍니다.</p>
+                <div class="search-box" style="margin-top: 1rem; margin-bottom: 0;">
+                    <input type="text" id="write-input" class="search-input" placeholder="예: 전기자동차 배터리 효율, 인공지능 윤리..." value="${state.write.topic}">
+                    <button class="primary-btn" onclick="goToStep2()">주제 추천받기</button>
+                </div>
+                <div id="write-loading" style="display:none; text-align:center; padding:2rem;">
+                    <i data-lucide="loader-2" class="lucide-spin" style="width: 2rem; height: 2rem; color: var(--primary);"></i>
+                    <p style="margin-top: 1rem; color: var(--text-muted);">AI가 최신 논문 트렌드를 분석하여 주제를 구상 중입니다...</p>
+                </div>
+                <div id="write-results" style="margin-top: 1.5rem;"></div>
+            </div>
+        `;
+    } 
+    else if (state.write.step === 2) {
+        html = `
+            <div class="result-card" style="border-left: 4px solid var(--menu-purple-text);">
+                <h3 class="result-title">2단계: 목차 구성하기</h3>
+                <p class="result-meta">선택하신 주제 <strong>"${state.write.selectedTitle}"</strong>에 대한 목차(Outline) 초안입니다. 내용을 자유롭게 수정하세요.</p>
+                <textarea id="outline-editor" style="width: 100%; height: 200px; margin-top: 1rem; padding: 1rem; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; font-family: inherit; line-height: 1.6;">${state.write.outline}</textarea>
+                <div style="display: flex; gap: 1rem; margin-top: 1rem; justify-content: flex-end;">
+                    <button class="icon-text-btn" onclick="state.write.step = 1; renderWriteStep();">이전 단계</button>
+                    <button class="primary-btn" onclick="goToStep3()" id="step3-btn">3단계: 본론 작성하기 <i data-lucide="arrow-right"></i></button>
+                </div>
+            </div>
+        `;
+    }
+    else if (state.write.step === 3) {
+        html = `
+            <div class="result-card" style="border-left: 4px solid var(--menu-emerald-text);">
+                <h3 class="result-title">3단계: 서론 및 본론 작성</h3>
+                <p class="result-meta">AI가 목차를 바탕으로 서론과 본론의 초안을 작성했습니다. 자유롭게 편집해 보세요.</p>
+                <textarea id="draft-editor" style="width: 100%; height: 350px; margin-top: 1rem; padding: 1rem; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; font-family: inherit; line-height: 1.6;">${state.write.draft}</textarea>
+                <div style="display: flex; gap: 1rem; margin-top: 1rem; justify-content: flex-end;">
+                    <button class="icon-text-btn" onclick="state.write.step = 2; renderWriteStep();">이전 단계</button>
+                    <button class="primary-btn" onclick="goToStep4()" id="step4-btn">4단계: 결론 도출하기 <i data-lucide="arrow-right"></i></button>
+                </div>
+            </div>
+        `;
+    }
+    else if (state.write.step === 4) {
+        html = `
+            <div class="result-card" style="border-left: 4px solid var(--menu-amber-text);">
+                <h3 class="result-title">4단계: 결론 도출 및 검토</h3>
+                <p class="result-meta">본론을 바탕으로 도출된 결론입니다. 논문의 완성도를 높여보세요.</p>
+                <textarea id="conclusion-editor" style="width: 100%; height: 200px; margin-top: 1rem; padding: 1rem; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; font-family: inherit; line-height: 1.6;">${state.write.conclusion}</textarea>
+                <div style="display: flex; gap: 1rem; margin-top: 1rem; justify-content: flex-end;">
+                    <button class="icon-text-btn" onclick="state.write.step = 3; renderWriteStep();">이전 단계</button>
+                    <button class="primary-btn" onclick="goToStep5()">최종 논문 완성하기 <i data-lucide="check-circle"></i></button>
+                </div>
+            </div>
+        `;
+    }
+    else if (state.write.step === 5) {
+        const fullPaper = `# ${state.write.selectedTitle}\n\n## 서론 및 본론\n${state.write.draft}\n\n## 결론\n${state.write.conclusion}`;
+        html = `
+            <div class="result-card" style="border-left: 4px solid var(--primary); background: var(--menu-blue);">
+                <h3 class="result-title"><i data-lucide="award"></i> 5단계: 최종 논문 완성</h3>
+                <p class="result-meta">축하합니다! AI와 함께 논문 초안 작성을 완료했습니다.</p>
+                <div style="background: var(--bg-main); padding: 1.5rem; margin-top: 1rem; border-radius: 8px; border: 1px solid var(--border-color); max-height: 400px; overflow-y: auto; white-space: pre-wrap; line-height: 1.6; font-size: 0.95rem;">${fullPaper}</div>
+                <div style="display: flex; gap: 1rem; margin-top: 1.5rem; justify-content: center;">
+                    <button class="icon-text-btn" onclick="state.write.step = 4; renderWriteStep();">수정하러 가기</button>
+                    <button class="primary-btn" onclick="alert('논문 파일 다운로드 기능은 추후 연동됩니다!')"><i data-lucide="download"></i> 텍스트(.txt)로 다운로드</button>
+                </div>
+            </div>
+        `;
     }
 
-    // Show Loading
-    resultsContainer.innerHTML = `
-        <div style="text-align: center; padding: 2rem;">
-            <i data-lucide="loader-2" class="lucide-spin" style="width: 2rem; height: 2rem; color: var(--primary); animation: spin 1s linear infinite;"></i>
-            <p style="margin-top: 1rem; color: var(--text-muted);">AI가 '${input}' 분야의 최신 연구 동향을 분석하여 주제를 구상 중입니다...</p>
-        </div>
-    `;
-    lucide.createIcons();
+    container.innerHTML = html;
     
-    // Add spin animation dynamically if not exists
     if (!document.getElementById('spin-anim')) {
         const style = document.createElement('style');
         style.id = 'spin-anim';
         style.innerHTML = '@keyframes spin { 100% { transform: rotate(360deg); } }';
         document.head.appendChild(style);
     }
+    lucide.createIcons();
+}
 
-    setTimeout(() => {
-        resultsContainer.innerHTML = `
+window.goToStep2 = async function() {
+    const input = document.getElementById('write-input').value;
+    if (!input.trim()) { alert('분야를 입력해주세요.'); return; }
+    
+    state.write.topic = input;
+    document.getElementById('write-loading').style.display = 'block';
+    document.getElementById('write-results').innerHTML = '';
+    
+    const prompt = `학술 논문을 작성하려고 합니다. 연구 분야는 "${input}" 입니다. 이 분야에서 현재 가장 학술적으로 가치있고 트렌디한 논문 주제(제목) 3가지를 추천해주세요. 번호 매기기로 3개만 간결하게 응답해주세요.`;
+    
+    const result = await callAiApi(prompt);
+    document.getElementById('write-loading').style.display = 'none';
+    
+    if (result) {
+        // 간단한 파싱
+        const topics = result.split('\n').filter(line => line.trim().match(/^\d/)).map(line => line.replace(/^\d+[\.\)]\s*/, '').trim());
+        
+        let html = `
             <div class="result-card" style="border-left: 4px solid var(--menu-purple-text); background: var(--menu-purple); animation: fadeIn 0.5s;">
                 <h4 style="color: var(--menu-purple-text); margin-bottom: 0.5rem; display:flex; align-items:center; gap:0.5rem;"><i data-lucide="sparkles"></i> AI 추천 연구 주제</h4>
-                <p style="font-size: 0.875rem; line-height: 1.6; margin-bottom: 1rem;">
-                    입력하신 <strong>"${input}"</strong> 분야는 최근 학계에서 활발한 연구가 진행되고 있습니다. 다음 3가지 세부 주제 중 하나를 선택하여 논문을 전개해보는 것을 추천합니다.
-                </p>
-                <ol style="margin-left: 1.5rem; font-size: 0.875rem; line-height: 1.8; margin-bottom: 1.5rem;">
-                    <li>${input} 시스템의 최적화 알고리즘 설계 및 성능 평가</li>
-                    <li>딥러닝 기법을 적용한 차세대 ${input} 소자 결함 탐지 방법론</li>
-                    <li>${input} 기술을 활용한 데이터 처리 지연시간 최소화 방안</li>
-                </ol>
-                <button class="primary-btn" style="background: var(--menu-purple-text); margin:0 auto;" onclick="alert('다음 단계로 진행합니다. (구현 예정)')">2단계: 목차 구성하기 <i data-lucide="arrow-right"></i></button>
-            </div>
+                <p style="font-size: 0.875rem; line-height: 1.6; margin-bottom: 1rem;">원하시는 논문 주제를 하나 선택해주세요.</p>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
         `;
+        
+        topics.forEach((topic, i) => {
+            html += `<button class="icon-text-btn" style="text-align: left; background: var(--bg-main); border: 1px solid var(--border-color); padding: 1rem; width: 100%; white-space: normal;" onclick="selectTopic('${topic.replace(/'/g, "\\'")}')">${i+1}. ${topic}</button>`;
+        });
+        
+        html += `</div></div>`;
+        document.getElementById('write-results').innerHTML = html;
         lucide.createIcons();
-    }, 2000);
+    }
+}
+
+window.selectTopic = async function(topic) {
+    state.write.selectedTitle = topic;
+    
+    const btn = event.currentTarget;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<i data-lucide="loader-2" class="lucide-spin"></i> 목차 생성 중...`;
+    lucide.createIcons();
+    
+    const prompt = `선택된 논문 주제는 "${topic}" 입니다. 이 논문의 학술적인 목차(서론, 본론(이론적 배경, 연구방법 등), 결론)를 논리적으로 구성해주세요. 너무 길지 않게 핵심만 마크다운 포맷으로 작성해주세요.`;
+    
+    const outline = await callAiApi(prompt);
+    
+    if (outline) {
+        state.write.outline = outline;
+        state.write.step = 2;
+        renderWriteStep();
+    } else {
+        btn.innerHTML = originalText;
+    }
+}
+
+window.goToStep3 = async function() {
+    const outline = document.getElementById('outline-editor').value;
+    state.write.outline = outline;
+    
+    const btn = document.getElementById('step3-btn');
+    btn.innerHTML = `<i data-lucide="loader-2" class="lucide-spin"></i> 초안 작성 중... (약 10초 소요)`;
+    lucide.createIcons();
+    
+    const prompt = `주제: "${state.write.selectedTitle}"\n목차:\n${outline}\n\n위 목차를 바탕으로 논문의 '서론'과 '본론' 부분의 초안을 1500자 내외로 매우 학술적이고 전문적인 어조로 작성해주세요. 결론 부분은 제외하고 작성하세요.`;
+    
+    const draft = await callAiApi(prompt);
+    
+    if (draft) {
+        state.write.draft = draft;
+        state.write.step = 3;
+        renderWriteStep();
+    } else {
+        btn.innerHTML = `3단계: 본론 작성하기 <i data-lucide="arrow-right"></i>`;
+        lucide.createIcons();
+    }
+}
+
+window.goToStep4 = async function() {
+    const draft = document.getElementById('draft-editor').value;
+    state.write.draft = draft;
+    
+    const btn = document.getElementById('step4-btn');
+    btn.innerHTML = `<i data-lucide="loader-2" class="lucide-spin"></i> 결론 도출 중...`;
+    lucide.createIcons();
+    
+    const prompt = `주제: "${state.write.selectedTitle}"\n서론 및 본론:\n${draft}\n\n위 내용을 바탕으로 논문의 '결론'과 '향후 연구 방향'을 500자 내외로 요약하여 전문적으로 작성해주세요.`;
+    
+    const conclusion = await callAiApi(prompt);
+    
+    if (conclusion) {
+        state.write.conclusion = conclusion;
+        state.write.step = 4;
+        renderWriteStep();
+    } else {
+        btn.innerHTML = `4단계: 결론 도출하기 <i data-lucide="arrow-right"></i>`;
+        lucide.createIcons();
+    }
+}
+
+window.goToStep5 = function() {
+    state.write.conclusion = document.getElementById('conclusion-editor').value;
+    state.write.step = 5;
+    renderWriteStep();
 }
