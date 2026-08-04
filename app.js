@@ -427,7 +427,7 @@ window.goToStep2 = async function() {
         `;
         
         topics.forEach((topic, i) => {
-            html += `<button class="icon-text-btn" style="text-align: left; background: var(--bg-main); border: 1px solid var(--border-color); padding: 1rem; width: 100%; white-space: normal;" onclick="selectTopic('${topic.replace(/'/g, "\\'")}')">${i+1}. ${topic}</button>`;
+            html += `<button class="icon-text-btn" style="text-align: left; background: var(--bg-main); border: 1px solid var(--border-color); padding: 1rem; width: 100%; white-space: normal;" onclick="selectTopic('${topic.replace(/'/g, "\\'")}', this)">${i+1}. ${topic}</button>`;
         });
         
         html += `</div></div>`;
@@ -436,10 +436,9 @@ window.goToStep2 = async function() {
     }
 }
 
-window.selectTopic = async function(topic) {
+window.selectTopic = async function(topic, btn) {
     state.write.selectedTitle = topic;
     
-    const btn = event.currentTarget;
     const originalText = btn.innerHTML;
     btn.innerHTML = `<i data-lucide="loader-2" class="lucide-spin"></i> 목차 생성 중...`;
     lucide.createIcons();
