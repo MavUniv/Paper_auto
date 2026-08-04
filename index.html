@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>논문 작성 가이드</title>
+    <meta name="description" content="논문 AI 검색 및 실존 여부 검증 도우미 서비스">
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons (CDN) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="light-mode">
+    <div id="app" class="app-container">
+        <!-- Mobile Header -->
+        <header class="mobile-header">
+            <div class="logo">
+                <i data-lucide="search"></i>
+                <span>논문 작성 가이드</span>
+            </div>
+            <button id="mobile-menu-btn" class="icon-btn">
+                <i data-lucide="menu"></i>
+            </button>
+        </header>
+
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i data-lucide="search"></i>
+                    <span>논문 작성 가이드</span>
+                </div>
+                <button id="close-sidebar-btn" class="icon-btn mobile-only">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="#/write" class="nav-link premium-btn">
+                    <i data-lucide="pen-line"></i>
+                    <span>학술지 작성 (AI 단계별)</span>
+                </a>
+                
+                <div class="nav-section-title">검색 · 검증 도구</div>
+                
+                <a href="#/" class="nav-link menu-blue" data-path="/">
+                    <i data-lucide="search"></i>
+                    <span>논문 검색 (키워드)</span>
+                </a>
+                <a href="#/semantic" class="nav-link menu-purple" data-path="/semantic">
+                    <i data-lucide="sparkles"></i>
+                    <span>논문 검색 (맥락)</span>
+                </a>
+                <a href="#/citation" class="nav-link menu-emerald" data-path="/citation">
+                    <i data-lucide="file-text"></i>
+                    <span>Citation Maker</span>
+                </a>
+                <a href="#/verify" class="nav-link menu-indigo" data-path="/verify">
+                    <i data-lucide="check-square"></i>
+                    <span>논문 실존 확인</span>
+                </a>
+                <a href="#/doi" class="nav-link menu-cyan" data-path="/doi">
+                    <i data-lucide="link"></i>
+                    <span>논문 DOI</span>
+                </a>
+                <a href="#/summary" class="nav-link menu-amber" data-path="/summary">
+                    <i data-lucide="book-open"></i>
+                    <span>논문 초록</span>
+                </a>
+                <a href="#/review" class="nav-link menu-teal" data-path="/review">
+                    <i data-lucide="file-text"></i>
+                    <span>Peer Review</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button id="theme-toggle-btn" class="icon-text-btn">
+                    <i data-lucide="moon"></i>
+                    <span>다크 모드</span>
+                </button>
+                <button id="settings-btn" class="icon-text-btn">
+                    <i data-lucide="settings"></i>
+                    <span>API 설정</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main id="main-content" class="main-content">
+            <!-- Dynamic Content Injected Here -->
+        </main>
+
+        <!-- API Settings Modal -->
+        <div id="settings-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2><i data-lucide="settings"></i> API 키 설정</h2>
+                    <button id="close-modal-btn" class="icon-btn"><i data-lucide="x"></i></button>
+                </div>
+                <div class="modal-body">
+                    <p class="modal-desc">검색 및 AI 기능을 사용하기 위해 API 키를 입력해주세요. 입력된 키는 사용자의 브라우저에만 안전하게 저장됩니다.</p>
+                    
+                    <div class="form-group">
+                        <label>AI 모델 선택</label>
+                        <select id="ai-provider-select" class="form-input">
+                            <option value="openai">OpenAI (ChatGPT)</option>
+                            <option value="gemini">Google (Gemini)</option>
+                            <option value="anthropic">Anthropic (Claude)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label id="ai-key-label">OpenAI API Key</label>
+                        <input type="password" id="ai-api-key" class="form-input" placeholder="sk-...">
+                    </div>
+
+                    <hr class="divider">
+
+                    <div class="form-group">
+                        <label>SerpApi Key (Google Scholar 검색용)</label>
+                        <input type="password" id="serp-api-key" class="form-input" placeholder="Enter SerpApi key...">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="save-settings-btn" class="primary-btn">저장하기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom JS -->
+    <script src="app.js"></script>
+</body>
+</html>
