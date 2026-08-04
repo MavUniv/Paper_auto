@@ -1,11 +1,6 @@
 // App State
 const state = {
-    theme: localStorage.getItem('theme') || 'light',
-    settings: {
-        aiProvider: localStorage.getItem('aiProvider') || 'openai',
-        aiKey: localStorage.getItem('aiKey') || '',
-        serpKey: localStorage.getItem('serpKey') || ''
-    }
+    theme: localStorage.getItem('theme') || 'light'
 };
 
 // DOM Elements
@@ -14,17 +9,7 @@ const sidebar = document.getElementById('sidebar');
 const mobileMenuBtn = document.getElementById('mobile-menu-btn');
 const closeSidebarBtn = document.getElementById('close-sidebar-btn');
 const themeToggleBtn = document.getElementById('theme-toggle-btn');
-const settingsBtn = document.getElementById('settings-btn');
-const settingsModal = document.getElementById('settings-modal');
-const closeModalBtn = document.getElementById('close-modal-btn');
 const mainContent = document.getElementById('main-content');
-
-// Settings Elements
-const aiProviderSelect = document.getElementById('ai-provider-select');
-const aiKeyInput = document.getElementById('ai-api-key');
-const aiKeyLabel = document.getElementById('ai-key-label');
-const serpKeyInput = document.getElementById('serp-api-key');
-const saveSettingsBtn = document.getElementById('save-settings-btn');
 
 // Initialize
 function init() {
@@ -32,12 +17,6 @@ function init() {
     setupEventListeners();
     handleRoute();
     lucide.createIcons();
-    
-    // Load Settings to UI
-    aiProviderSelect.value = state.settings.aiProvider;
-    aiKeyInput.value = state.settings.aiKey;
-    serpKeyInput.value = state.settings.serpKey;
-    updateAiKeyLabel();
 }
 
 function applyTheme() {
@@ -59,25 +38,7 @@ function toggleTheme() {
     applyTheme();
 }
 
-function updateAiKeyLabel() {
-    const provider = aiProviderSelect.value;
-    if (provider === 'openai') aiKeyLabel.textContent = 'OpenAI API Key';
-    else if (provider === 'gemini') aiKeyLabel.textContent = 'Gemini API Key';
-    else if (provider === 'anthropic') aiKeyLabel.textContent = 'Anthropic (Claude) API Key';
-}
 
-function saveSettings() {
-    state.settings.aiProvider = aiProviderSelect.value;
-    state.settings.aiKey = aiKeyInput.value;
-    state.settings.serpKey = serpKeyInput.value;
-    
-    localStorage.setItem('aiProvider', state.settings.aiProvider);
-    localStorage.setItem('aiKey', state.settings.aiKey);
-    localStorage.setItem('serpKey', state.settings.serpKey);
-    
-    settingsModal.classList.add('hidden');
-    alert('API 설정이 저장되었습니다.');
-}
 
 function setupEventListeners() {
     // Sidebar
@@ -86,16 +47,6 @@ function setupEventListeners() {
     
     // Theme
     themeToggleBtn.addEventListener('click', toggleTheme);
-    
-    // Settings
-    settingsBtn.addEventListener('click', () => settingsModal.classList.remove('hidden'));
-    closeModalBtn.addEventListener('click', () => settingsModal.classList.add('hidden'));
-    settingsModal.addEventListener('click', (e) => {
-        if (e.target === settingsModal) settingsModal.classList.add('hidden');
-    });
-    
-    aiProviderSelect.addEventListener('change', updateAiKeyLabel);
-    saveSettingsBtn.addEventListener('click', saveSettings);
     
     // Routing
     window.addEventListener('hashchange', handleRoute);
@@ -188,20 +139,31 @@ function handleRoute() {
     lucide.createIcons();
 }
 
-// Mock Search Function
-window.mockSearch = function(type) {
+// Real API Search Function
+window.mockSearch = async function(type) {
     const resultsContainer = document.getElementById('search-results');
     
+    let query = '';
+    if (type === 'keyword') {
+        query = document.getElementById('keyword-search').value;
+    } else if (type === 'semantic') {
+        query = document.getElementById('semantic-search').value;
+    }
+
+    if (!query.trim()) {
+        alert('검색어를 입력해주세요.');
+        return;
+    }
+
     // Show Loading
     resultsContainer.innerHTML = `
         <div style="text-align: center; padding: 2rem;">
             <i data-lucide="loader-2" class="lucide-spin" style="width: 2rem; height: 2rem; color: var(--primary); animation: spin 1s linear infinite;"></i>
-            <p style="margin-top: 1rem; color: var(--text-muted);">논문 데이터를 가져오는 중입니다...</p>
+            <p style="margin-top: 1rem; color: var(--text-muted);">Vercel 서버를 통해 안전하게 데이터를 가져오는 중입니다...</p>
         </div>
     `;
     lucide.createIcons();
 
-    // Add spin animation dynamically if not exists
     if (!document.getElementById('spin-anim')) {
         const style = document.createElement('style');
         style.id = 'spin-anim';
@@ -209,8 +171,83 @@ window.mockSearch = function(type) {
         document.head.appendChild(style);
     }
 
+    try {
+        // 백엔드(서버리스 함수) 호출
+        const targetUrl = `/api/search?query=${encodeURIComponent(query)}`;
+        const response = await fetch(targetUrl);
+        
+        if (!response.ok) {
+            throw new Error(`서버 에러: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.error) {
+             throw new Error(data.error);
+        }
+
+        const organicResults = data.organic_results || [];
+
+        if (organicResults.length === 0) {
+            resultsContainer.innerHTML = `<p style="text-align:center; margin-top:2rem; color:var(--text-muted);">검색 결과가 없습니다.</p>`;
+            return;
+        }
+
+        let html = '';
+        if (type === 'semantic') {
+            html += `
+                <div class="result-card" style="border-left: 4px solid var(--primary); background: var(--menu-blue);">
+                    <h3 class="result-title" style="display:flex; align-items:center; gap:0.5rem;"><i data-lucide="sparkles"></i> AI 검색 결과</h3>
+                    <p>맥락에 맞는 검색 결과를 구글 스칼라에서 가져왔습니다. (초록 요약 등 AI 추가 분석은 OpenAI 연동 시 작동합니다.)</p>
+                </div>
+            `;
+        }
+
+        organicResults.forEach(res => {
+            const authors = res.publication_info?.summary || '저자 정보 없음';
+            const link = res.link || '#';
+            const snippet = res.snippet || '초록 정보가 없습니다.';
+            
+            html += `
+                <div class="result-card">
+                    <h3 class="result-title">${res.title}</h3>
+                    <p class="result-meta">${authors}</p>
+                    <p style="font-size: 0.875rem; line-height: 1.5; color: var(--text-main); margin-bottom: 1rem;">
+                        ${snippet}
+                    </p>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="icon-text-btn" style="width: auto; padding: 0.25rem 0.5rem; background: var(--border-color);"><i data-lucide="bookmark"></i> 저장</button>
+                        <a href="${link}" target="_blank" style="text-decoration: none;">
+                            <button class="icon-text-btn" style="width: auto; padding: 0.25rem 0.5rem; background: var(--border-color); color: var(--text-main);"><i data-lucide="external-link"></i> 원문 보기</button>
+                        </a>
+                    </div>
+                </div>
+            `;
+        });
+
+        resultsContainer.innerHTML = html;
+        lucide.createIcons();
+
+    } catch (error) {
+        console.error(error);
+        resultsContainer.innerHTML = `
+            <div style="text-align: center; padding: 2rem; color: #ef4444;">
+                <p>데이터를 가져오는 중 오류가 발생했습니다.</p>
+                <p style="font-size: 0.875rem; margin-top: 0.5rem;">API 키가 유효한지 확인해주세요. 오류: ${error.message}</p>
+            </div>
+        `;
+    }
+}
+
+function showMockData(type, resultsContainer) {
+    resultsContainer.innerHTML = `
+        <div style="text-align: center; padding: 2rem;">
+            <i data-lucide="loader-2" class="lucide-spin" style="width: 2rem; height: 2rem; color: var(--primary); animation: spin 1s linear infinite;"></i>
+            <p style="margin-top: 1rem; color: var(--text-muted);">논문 데이터를 가져오는 중입니다...</p>
+        </div>
+    `;
+    lucide.createIcons();
     setTimeout(() => {
-        // Mock Results
         const results = [
             { title: '인공지능을 활용한 자연어 처리 기술 동향', authors: '홍길동, 김철수', year: 2024, journal: '한국컴퓨터정보학회논문지' },
             { title: '대형 언어 모델(LLM)의 윤리적 문제와 해결 방안', authors: '이영희', year: 2023, journal: 'AI 윤리 연구' },

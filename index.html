@@ -85,10 +85,6 @@
                     <i data-lucide="moon"></i>
                     <span>다크 모드</span>
                 </button>
-                <button id="settings-btn" class="icon-text-btn">
-                    <i data-lucide="settings"></i>
-                    <span>API 설정</span>
-                </button>
             </div>
         </aside>
 
@@ -97,42 +93,7 @@
             <!-- Dynamic Content Injected Here -->
         </main>
 
-        <!-- API Settings Modal -->
-        <div id="settings-modal" class="modal-overlay hidden">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2><i data-lucide="settings"></i> API 키 설정</h2>
-                    <button id="close-modal-btn" class="icon-btn"><i data-lucide="x"></i></button>
-                </div>
-                <div class="modal-body">
-                    <p class="modal-desc">검색 및 AI 기능을 사용하기 위해 API 키를 입력해주세요. 입력된 키는 사용자의 브라우저에만 안전하게 저장됩니다.</p>
-                    
-                    <div class="form-group">
-                        <label>AI 모델 선택</label>
-                        <select id="ai-provider-select" class="form-input">
-                            <option value="openai">OpenAI (ChatGPT)</option>
-                            <option value="gemini">Google (Gemini)</option>
-                            <option value="anthropic">Anthropic (Claude)</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label id="ai-key-label">OpenAI API Key</label>
-                        <input type="password" id="ai-api-key" class="form-input" placeholder="sk-...">
-                    </div>
-
-                    <hr class="divider">
-
-                    <div class="form-group">
-                        <label>SerpApi Key (Google Scholar 검색용)</label>
-                        <input type="password" id="serp-api-key" class="form-input" placeholder="Enter SerpApi key...">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button id="save-settings-btn" class="primary-btn">저장하기</button>
-                </div>
-            </div>
-        </div>
+        <!-- API Settings Modal Removed for Serverless Architecture -->
     </div>
 
     <!-- Custom JS -->
